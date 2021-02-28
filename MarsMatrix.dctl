@@ -1,0 +1,54 @@
+// Matrix DCTL export
+
+__DEVICE__ float Luma(float R, float G, float B, int L) { 
+float lumaRec709 = R * 0.2126f + G * 0.7152f + B * 0.0722f; 
+float lumaRec2020 = R * 0.2627f + G * 0.6780f + B * 0.0593f; 
+float lumaDCIP3 = R * 0.209492f + G * 0.721595f + B * 0.0689131f; 
+float lumaACESAP0 = R * 0.3439664498f + G * 0.7281660966f + B * -0.0721325464f; 
+float lumaACESAP1 = R * 0.2722287168f + G * 0.6740817658f + B * 0.0536895174f; 
+float lumaAvg = (R + G + B) / 3.0f; 
+float lumaMax = _fmaxf(_fmaxf(R, G), B); 
+float Lu = L == 0 ? lumaRec709 : L == 1 ? lumaRec2020 : L == 2 ? lumaDCIP3 : L == 3 ? lumaACESAP0 : L == 4 ? lumaACESAP1 : L == 5 ? lumaAvg : lumaMax; 
+return Lu; 
+} 
+ 
+__DEVICE__ float Sat(float r, float g, float b){ 
+float min = _fminf(_fminf(r, g), b); 
+float max = _fmaxf(_fmaxf(r, g), b); 
+float delta = max - min; 
+float S = max != 0.0f ? delta / max : 0.0f; 
+return S; 
+} 
+ 
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) 
+{ 
+const float Matrix[9] =  {1.000000f, 0.000000f, 0.000000f, 0.180000f, 1.000000f, 0.000000f, 0.030000f, 0.000000f, 1.000000f}; 
+int lumaSwitch = 0; 
+int satSwitch = 0; 
+int lumaMath = 1; 
+ 
+float red = p_R * Matrix[0] + p_G * Matrix[1] + p_B * Matrix[2]; 
+float green = p_R * Matrix[3] + p_G * Matrix[4] + p_B * Matrix[5]; 
+float blue = p_R * Matrix[6] + p_G * Matrix[7] + p_B * Matrix[8]; 
+if (lumaSwitch == 1) { 
+float inLuma = Luma(p_R, p_G, p_B, lumaMath); 
+float outLuma = Luma(red, green, blue, lumaMath); 
+red = red * (inLuma / outLuma); 
+green = green * (inLuma / outLuma); 
+blue = blue * (inLuma / outLuma); 
+} 
+ 
+if (satSwitch == 1) { 
+float inSat = Sat(p_R, p_G, p_B); 
+float outSat = Sat(red, green, blue); 
+float satgap = inSat / outSat; 
+float sLuma = Luma(red, green, blue, lumaMath); 
+float sr = (1.0f - satgap) * sLuma + red * satgap; 
+float sg = (1.0f - satgap) * sLuma + green * satgap; 
+float sb = (1.0f - satgap) * sLuma + blue * satgap; 
+red = inSat == 0.0f ? sLuma : sr; 
+green = inSat == 0.0f ? sLuma : sg; 
+blue = inSat == 0.0f ? sLuma : sb; 
+} 
+return make_float3(red, green, blue); 
+}

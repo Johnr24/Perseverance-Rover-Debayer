@@ -1,0 +1,44 @@
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, __TEXTURE__ p_TexR, __TEXTURE__ p_TexG, __TEXTURE__ p_TexB)
+{
+    float r = 0;
+    float g = 0;
+    float b = 0;
+
+    int Y=p_Y;
+    int X=p_X;
+   
+    if (X%2 == 0 && Y%2 == 1) {
+    r = _tex2D(p_TexR, X, Y+1);
+    g = ((_tex2D(p_TexG, X, Y) + _tex2D(p_TexG, X+1, Y+1))/2);
+    b = _tex2D(p_TexB, X+1, Y);
+    if (Y == 0 || Y == p_Height) g = _tex2D(p_TexG, X, Y);
+    if (Y == p_Height-1) r = _tex2D(p_TexG, X, Y-1);
+    }
+
+    if (X%2 == 1 && Y%2 == 1) {
+    r = _tex2D(p_TexR, X-1, Y-1);
+    g = ((_tex2D(p_TexG, X-1, Y) + _tex2D(p_TexG, X, Y-1))/2);
+    b = _tex2D(p_TexB, X, Y);
+    if (Y == 0 || Y == p_Height) g = _tex2D(p_TexG, X-1, Y);
+    }
+
+    if (X%2 == 0 && Y%2 == 0) {
+    r = _tex2D(p_TexR, X, Y);
+    g = ((_tex2D(p_TexG, X+1, Y) + _tex2D(p_TexG, X, Y-1))/2);
+    b = _tex2D(p_TexB, X+1, Y-1);
+    if (Y == 0 || Y == p_Height) g = _tex2D(p_TexG, X+1, Y);
+    }
+
+
+    if (X%2 == 1 && Y%2 == 0) {
+    r = _tex2D(p_TexR, X-1, Y); 
+    g = ((_tex2D(p_TexG, X, Y) + _tex2D(p_TexG, X-1, Y-1))/2);
+    b = _tex2D(p_TexB, X, Y-1);
+  
+    if (Y == 0 || Y == p_Height) g = _tex2D(p_TexG, X, Y);
+    }
+
+  return make_float3(r, g, b);
+
+
+}
